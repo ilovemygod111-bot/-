@@ -1,0 +1,962 @@
+<meta charset="utf-8">
+<title>مختبر النواة</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lalezar&family=IBM+Plex+Sans+Arabic:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: a lab notebook in one dark "cloud chamber" world. The live 3D atom builder is the hero; every activity below is a lab card tagged with its STEAM letters. */
+:root {
+  --bg: #0b1020;
+  --bg-2: #10172e;
+  --panel: #151e3b;
+  --line: #29345f;
+  --ink: #e8ecf8;
+  --ink-dim: #a2abcd;
+  --accent: #fbbf24;
+  --accent-ink: #231600;
+  --proton: #ef4444;
+  --neutron: #a3b1c9;
+  --electron: #38bdf8;
+  --good: #4ade80;
+  --bad: #f87171;
+  --s: #60a5fa; --t: #a78bfa; --e: #f59e0b; --a: #f472b6; --m: #34d399;
+  --f-display: "Lalezar", "IBM Plex Sans Arabic", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, system-ui, sans-serif;
+  --f-num: "IBM Plex Mono", ui-monospace, monospace;
+  --r: 14px;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { background: var(--bg); color: var(--ink); }
+body { font-family: var(--f-body); font-size: 16px; line-height: 1.7; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--bg); }
+.wrap { max-width: 1120px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 64px; display: grid; gap: 44px; }
+h1, h2, h3 { font-family: var(--f-display); font-weight: 400; line-height: 1.25; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(2.2rem, 6vw, 3.6rem); }
+h2 { font-size: clamp(1.6rem, 4vw, 2.2rem); }
+h3 { font-size: 1.3rem; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+p { margin: 0; max-width: 70ch; }
+.dim { color: var(--ink-dim); }
+.num { font-family: var(--f-num); font-variant-numeric: tabular-nums; }
+button, select, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+nav.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+nav.top .in { max-width: 1120px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 10px; display: flex; align-items: center; gap: 14px; }
+nav.top .links { display: flex; gap: 4px; overflow-x: auto; flex: 1; min-width: 0; scrollbar-width: none; }
+nav.top a { color: var(--ink-dim); text-decoration: none; white-space: nowrap; padding: 4px 10px; border-radius: 999px; font-size: .9rem; }
+nav.top a:hover { color: var(--ink); background: var(--panel); }
+.score-pill { white-space: nowrap; background: var(--accent); color: var(--accent-ink); padding: 4px 12px; border-radius: 999px; font-weight: 700; font-size: .9rem; }
+
+header.hero { display: grid; gap: 14px; padding-top: 32px; }
+.eyebrow { font-size: .85rem; letter-spacing: .03em; color: var(--accent); font-weight: 700; }
+.steam { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px 4px 6px; font-size: .9rem; background: var(--bg-2); }
+.chip b { font-family: var(--f-num); width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; color: var(--bg); font-size: .85rem; }
+.c-s b { background: var(--s); } .c-t b { background: var(--t); } .c-e b { background: var(--e); } .c-a b { background: var(--a); } .c-m b { background: var(--m); }
+
+/* builder */
+.lab { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 16px; }
+@media (max-width: 860px) { .lab { grid-template-columns: 1fr; } }
+.stage { position: relative; height: min(66vh, 600px); min-height: 380px; border-radius: var(--r); overflow: hidden; border: 1px solid var(--line); background: #03050d; }
+#scene { position: absolute; inset: 0; }
+#scene canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.legend { position: absolute; top: 10px; inset-inline-end: 10px; display: grid; gap: 2px; font-size: .8rem; background: rgba(16,23,46,.85); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-inline-end: 6px; vertical-align: middle; }
+.toolbar { position: absolute; inset-inline: 10px; bottom: 10px; display: flex; flex-wrap: wrap; gap: 8px; }
+.tb { background: rgba(16,23,46,.9); border: 1px solid var(--line); border-radius: 10px; padding: 6px 12px; font-size: .9rem; }
+.tb:hover { border-color: var(--accent); }
+.tb.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 700; }
+.tb.on { border-color: var(--accent); color: var(--accent); }
+.tb:disabled { opacity: .5; cursor: default; }
+.infocard { position: absolute; top: 10px; inset-inline-start: 10px; width: min(300px, calc(100% - 20px)); background: rgba(16,23,46,.95); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 6px; font-size: .9rem; }
+.tourbox { position: absolute; top: 10px; inset-inline-start: 10px; width: min(360px, calc(100% - 20px)); background: var(--accent); color: var(--accent-ink); border-radius: 12px; padding: 12px 14px; font-weight: 500; font-size: .95rem; }
+.x { position: absolute; top: 4px; inset-inline-end: 8px; background: none; border: 0; font-size: 1.2rem; color: var(--ink-dim); }
+.loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--ink-dim); padding: 20px; text-align: center; }
+
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: grid; gap: 14px; align-content: start; }
+.tile { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: center; }
+.elem { width: 92px; height: 104px; border: 2px solid var(--accent); border-radius: 10px; display: grid; place-items: center; align-content: center; gap: 0; background: var(--bg); position: relative; }
+.elem .z { position: absolute; top: 4px; inset-inline-start: 8px; font-family: var(--f-num); font-size: .8rem; color: var(--ink-dim); }
+.elem .sym { font-family: var(--f-num); font-size: 2.2rem; line-height: 1; direction: ltr; }
+.elem .nm { font-size: .8rem; }
+.notation { font-family: var(--f-num); direction: ltr; display: inline-flex; align-items: center; gap: 2px; font-size: 1.6rem; }
+.notation .st { display: grid; font-size: .8rem; line-height: 1.1; text-align: end; }
+.counter { display: grid; grid-template-columns: 1fr auto auto auto; align-items: center; gap: 8px; }
+.counter .lab2 { display: flex; align-items: center; gap: 8px; }
+.counter .lab2 i { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+.counter button { width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); font-size: 1.1rem; line-height: 1; }
+.counter button:hover { border-color: var(--accent); }
+.counter b { min-width: 2.2ch; text-align: center; }
+.readout { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; font-size: .88rem; }
+.readout span { color: var(--ink-dim); display: block; font-size: .75rem; }
+.status { font-size: .88rem; padding: 6px 10px; border-radius: 8px; background: var(--bg-2); }
+
+section { display: grid; gap: 18px; scroll-margin-top: 70px; }
+.sec-head { display: grid; gap: 6px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.grid2 > * { min-width: 0; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 20px; display: grid; gap: 12px; align-content: start; }
+.tag { font-family: var(--f-body); font-size: .72rem; padding: 2px 8px; border-radius: 6px; color: var(--bg); font-weight: 700; }
+.tg-s { background: var(--s); } .tg-t { background: var(--t); } .tg-e { background: var(--e); } .tg-a { background: var(--a); } .tg-m { background: var(--m); }
+ul.clean { margin: 0; padding-inline-start: 20px; display: grid; gap: 4px; }
+
+.phases { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+.phase { border-top: 3px solid var(--accent); background: var(--bg-2); border-radius: 0 0 10px 10px; padding: 14px; display: grid; gap: 6px; align-content: start; }
+.phase .n { font-family: var(--f-num); color: var(--accent); font-size: .85rem; }
+.phase p { font-size: .9rem; color: var(--ink-dim); }
+
+.btn { background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 10px; padding: 8px 16px; font-weight: 700; justify-self: start; }
+.btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+.btn:disabled { opacity: .45; cursor: default; }
+.field { display: grid; gap: 4px; font-size: .9rem; }
+.field input[type=text], .field input[type=number], .field select, textarea { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; width: 100%; }
+textarea { min-height: 70px; resize: vertical; }
+.row { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
+.row > .field { flex: 1 1 120px; }
+.feedback { font-weight: 500; min-height: 1.5em; }
+.ok { color: var(--good); } .no { color: var(--bad); }
+
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+th, td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: start; vertical-align: top; }
+th { color: var(--ink-dim); font-weight: 500; }
+
+.q { display: grid; gap: 8px; padding-block: 12px; border-bottom: 1px solid var(--line); }
+.q:last-child { border-bottom: 0; }
+.opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px; }
+.opt { text-align: start; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; }
+.opt.sel { border-color: var(--accent); }
+.opt.right { border-color: var(--good); background: color-mix(in srgb, var(--good) 15%, var(--bg)); }
+.opt.wrong { border-color: var(--bad); background: color-mix(in srgb, var(--bad) 15%, var(--bg)); }
+.check { border-inline-start: 3px solid var(--t); background: var(--bg-2); padding: 12px 16px; border-radius: 0 10px 10px 0; display: grid; gap: 4px; }
+.check .lab { font-size: .8rem; color: var(--t); font-weight: 700; letter-spacing: .03em; }
+
+.race { display: grid; gap: 10px; }
+.race .big { font-size: 2rem; text-align: center; }
+.timer { font-family: var(--f-num); color: var(--accent); }
+.match { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.match .col { display: grid; gap: 8px; align-content: start; }
+.mbtn { text-align: start; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-size: .9rem; }
+.mbtn.sel { border-color: var(--accent); }
+.mbtn.done { border-color: var(--good); opacity: .55; cursor: default; }
+.shake { animation: shake .35s; border-color: var(--bad) !important; }
+@keyframes shake { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+
+.swatch { display: flex; gap: 10px; flex-wrap: wrap; }
+.swatch input[type=color] { width: 52px; height: 36px; border: 1px solid var(--line); background: none; border-radius: 8px; padding: 2px; }
+#artCanvas { width: 100%; max-width: 320px; aspect-ratio: 1; border-radius: 12px; background: var(--bg); border: 1px solid var(--line); margin-inline: auto; display: block; }
+
+.strat { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.strat div { background: var(--bg-2); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: grid; gap: 4px; align-content: start; }
+.strat b { font-size: 1rem; }
+.strat .when { font-size: .78rem; color: var(--accent); }
+.strat p { font-size: .88rem; color: var(--ink-dim); }
+
+.dash { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.dash div { background: var(--bg-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: grid; gap: 2px; }
+.dash span { font-size: .8rem; color: var(--ink-dim); }
+.dash b { font-family: var(--f-num); font-size: 1.15rem; }
+.bar { height: 10px; background: var(--bg); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
+.bar i { display: block; height: 100%; background: var(--accent); width: 0; transition: width .5s; }
+.kwl { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+
+footer { color: var(--ink-dim); font-size: .85rem; border-top: 1px solid var(--line); padding-top: 16px; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+
+<nav class="top" dir="rtl">
+  <div class="in">
+    <div class="links">
+      <a href="#plan">خطة الدرس</a>
+      <a href="#strategies">الاستراتيجيات</a>
+      <a href="#pre">التقويم القبلي</a>
+      <a href="#lab">باني الذرة 3D</a>
+      <a href="#games">الألعاب</a>
+      <a href="#math">الرياضيات</a>
+      <a href="#art">الفن</a>
+      <a href="#final">التقويم الختامي</a>
+    </div>
+    <span class="score-pill">نقاطي: <span class="num" id="navScore">0</span></span>
+  </div>
+</nav>
+
+<div class="wrap" dir="rtl" lang="ar">
+
+<header class="hero">
+  <span class="eyebrow">العلوم · الصف الثالث المتوسط · الفصل الدراسي الأول · فصل «تركيب الذرة» · الصفحات 159–162</span>
+  <h1>مختبر النواة: العدد الذري والنظائر</h1>
+  <p class="dim">درس STEAM تفاعلي يبني فيه الطالب الذرة بنفسه في نموذج ثلاثي الأبعاد يعمل على الشاشة وفي نظارات الواقع الافتراضي، ثم يطبّق مفاهيم العدد الذري والعدد الكتلي والنظائر في ألعاب وتحديات، مع تقويم قبلي وبنائي وختامي.</p>
+  <div class="steam">
+    <span class="chip c-s"><b>S</b>العلوم: مكوّنات النواة والنظائر</span>
+    <span class="chip c-t"><b>T</b>التقنية: نموذج 3D وواقع افتراضي</span>
+    <span class="chip c-e"><b>E</b>الهندسة: بناء نماذج الذرات وتطبيقات النظائر</span>
+    <span class="chip c-a"><b>A</b>الفن: تصميم بطاقة عنصر</span>
+    <span class="chip c-m"><b>M</b>الرياضيات: العدد الكتلي ومتوسط الكتلة الذرية</span>
+  </div>
+</header>
+
+<!-- PLAN -->
+<section id="plan">
+  <div class="sec-head">
+    <h2>خطة الدرس</h2>
+    <p class="dim">الزمن: حصتان (2 × 45 دقيقة). الدرس مبني على دورة التعلّم الخماسية (5E)، ولكل مرحلة نشاط في هذه الصفحة.</p>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <h3>نواتج التعلّم</h3>
+      <p class="dim">يُتوقَّع من الطالب في نهاية الدرس أن:</p>
+      <ul class="clean">
+        <li>يحدّد مكوّنات النواة (البروتونات والنيوترونات) وشحنة كل منها وموقعها.</li>
+        <li>يعرّف العدد الذري ويبيّن أنه يحدد نوع العنصر.</li>
+        <li>يعرّف النظائر ويعطي أمثلة عليها مثل الكربون-12 والكربون-14.</li>
+        <li>يحسب العدد الكتلي وعدد النيوترونات من رمز النظير.</li>
+        <li>يحسب متوسط الكتلة الذرية لعنصر من نسب وجود نظائره.</li>
+        <li>يذكر تطبيقات عملية للنظائر في الطب والآثار والصناعة.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>المفردات والأدوات</h3>
+      <p><b>المفردات:</b> النواة، البروتون، النيوترون، العدد الذري، النظائر، العدد الكتلي، وحدة الكتلة الذرية (u)، متوسط الكتلة الذرية.</p>
+      <ul class="clean">
+        <li>جهاز حاسوب أو جهاز لوحي لكل مجموعة (3–4 طلاب).</li>
+        <li>نظارة واقع افتراضي تدعم WebXR (مثل Meta Quest) — اختيارية.</li>
+        <li>خرز أو كرات صلصال بثلاثة ألوان لبناء نماذج يدوية.</li>
+        <li>بطاقات النظائر، وأوراق رسم وألوان لنشاط الفن.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="phases">
+    <div class="phase"><span class="n">1 · التهيئة · 10 د</span><h3>أثِر الفضول</h3><p>سؤال: «كيف يعرف العلماء عمر مومياء عمرها آلاف السنين؟» ثم التقويم القبلي وجدول KWL.</p></div>
+    <div class="phase"><span class="n">2 · الاستكشاف · 20 د</span><h3>ادخل الذرة</h3><p>الجولة ثلاثية الأبعاد أو نظارة VR، ثم بناء ذرات بإضافة البروتونات والنيوترونات.</p></div>
+    <div class="phase"><span class="n">3 · الشرح · 15 د</span><h3>العدد الذري والنظائر</h3><p>مناقشة ما لاحظه الطلاب: البروتونات تغيّر العنصر، والنيوترونات تغيّر النظير فقط.</p></div>
+    <div class="phase"><span class="n">4 · التوسّع · 30 د</span><h3>محطات STEAM</h3><p>سباق النيوترونات، حساب متوسط الكتلة، مطابقة تطبيقات النظائر، وتصميم بطاقة عنصر.</p></div>
+    <div class="phase"><span class="n">5 · التقويم · 15 د</span><h3>اختبار وبطاقة خروج</h3><p>الاختبار الختامي، لوحة الإنجاز، سُلّم التقدير، واستكمال عمود «ماذا تعلّمت» في KWL.</p></div>
+  </div>
+</section>
+
+<!-- STRATEGIES -->
+<section id="strategies">
+  <div class="sec-head">
+    <h2>استراتيجيات التدريس</h2>
+    <p class="dim">استراتيجيات مناسبة لطلاب الصف الثالث المتوسط، وموضع كل منها في الدرس.</p>
+  </div>
+  <div class="strat">
+    <div><span class="when">التهيئة</span><b>جدول KWL</b><p>يكتب الطالب ما يعرفه عن الذرة وما يريد معرفته، ويكمل ما تعلّمه في نهاية الدرس.</p></div>
+    <div><span class="when">الاستكشاف</span><b>التعلّم بالمحاكاة والواقع الافتراضي</b><p>يدخل الطالب الذرة ويرى النواة والإلكترونات، فيتحول المفهوم المجرد إلى نموذج يمكن تدويره وتكبيره.</p></div>
+    <div><span class="when">الاستكشاف</span><b>الاستقصاء الموجّه</b><p>«أضف بروتوناً، ماذا تغيّر؟ أضف نيوتروناً، ماذا تغيّر؟» يستنتج الطالب القاعدة بنفسه قبل أن تُشرح له.</p></div>
+    <div><span class="when">الشرح</span><b>فكّر – زاوج – شارك</b><p>يفكر كل طالب في الفرق بين الكربون-12 والكربون-14، ثم يناقش زميله، ثم يشارك الزوج إجابته مع الصف.</p></div>
+    <div><span class="when">التوسّع</span><b>التعلّم التعاوني بالمحطات</b><p>تتنقل المجموعات بين أربع محطات: VR، باني الذرة، الرياضيات، الفن، وفي كل محطة دور لكل طالب.</p></div>
+    <div><span class="when">التوسّع</span><b>التعلّم باللعب (التلعيب)</b><p>نقاط ومستويات وتحديات مؤقتة تزيد الدافعية وتعطي تغذية راجعة فورية.</p></div>
+    <div><span class="when">الشرح والتقويم</span><b>خريطة المفاهيم</b><p>تربط المجموعة: الذرة ← النواة ← بروتونات (العدد الذري) + نيوترونات ← العدد الكتلي ← النظائر.</p></div>
+    <div><span class="when">الختام</span><b>بطاقة الخروج</b><p>سؤال قصير يجيب عنه كل طالب قبل مغادرة الحصة ليقيس المعلّم مدى تحقق الهدف.</p></div>
+  </div>
+</section>
+
+<!-- PRE -->
+<section id="pre">
+  <div class="sec-head">
+    <h2>التقويم القبلي</h2>
+    <p class="dim">أسئلة تشخيصية عن المعرفة السابقة من الدرس الأول «نماذج الذرة». لا تُحسب في الدرجة، لكنها تساعد المعلّم على التخطيط.</p>
+  </div>
+  <div class="card" id="preBox"></div>
+  <div class="card">
+    <h3>جدول KWL</h3>
+    <div class="kwl">
+      <div class="field"><label for="kwlK">ماذا أعرف عن الذرة؟</label><textarea id="kwlK">تتكوّن الذرة من بروتونات ونيوترونات وإلكترونات.</textarea></div>
+      <div class="field"><label for="kwlW">ماذا أريد أن أعرف؟</label><textarea id="kwlW">لماذا تختلف ذرات العنصر الواحد في كتلتها؟</textarea></div>
+      <div class="field"><label for="kwlL">ماذا تعلّمت؟ (يُكمل في نهاية الدرس)</label><textarea id="kwlL" placeholder="اكتب هنا بعد الاختبار الختامي"></textarea></div>
+    </div>
+  </div>
+</section>
+
+<!-- LAB -->
+<section id="lab">
+  <div class="sec-head">
+    <h2>باني الذرة ثلاثي الأبعاد</h2>
+    <p class="dim">أضف البروتونات والنيوترونات والإلكترونات، وشاهد الذرة تتغيّر. اسحب للدوران، وكبّر بعجلة الفأرة أو بإصبعين، واضغط على أي جسيم لمعرفة خصائصه. الأحجام والمسافات مكبّرة للتوضيح وليست بمقياس رسم حقيقي.</p>
+  </div>
+  <div class="lab">
+    <div class="stage" id="stage">
+      <div id="scene"></div>
+      <div class="loading" id="loading">جارٍ تحميل النموذج…</div>
+      <div class="legend"><span><i style="background:var(--proton)" id="lgP"></i>بروتون (+)</span><span><i style="background:var(--neutron)" id="lgN"></i>نيوترون (0)</span><span><i style="background:var(--electron)" id="lgE"></i>إلكترون (−)</span></div>
+      <div class="infocard" id="info" hidden></div>
+      <div class="tourbox" id="tourbox" hidden></div>
+      <div class="toolbar">
+        <button class="tb primary" id="btnTour">ابدأ الجولة الافتراضية</button>
+        <button class="tb" id="btnVR">الواقع الافتراضي (VR)</button>
+        <button class="tb" id="btnPause">إيقاف الحركة</button>
+        <button class="tb" id="btnReset">ذرة كربون-12</button>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="tile">
+        <div class="elem"><span class="z num" id="eZ">6</span><span class="sym" id="eSym">C</span><span class="nm" id="eName">كربون</span></div>
+        <div>
+          <div class="notation" id="eNot"></div>
+          <div class="dim" id="eIso" style="font-size:.9rem"></div>
+        </div>
+      </div>
+      <div class="counter"><span class="lab2"><i style="background:var(--proton)"></i>بروتونات</span><button type="button" data-k="p" data-d="-1" aria-label="أنقص بروتوناً">−</button><b class="num" id="cP">6</b><button type="button" data-k="p" data-d="1" aria-label="أضف بروتوناً">+</button></div>
+      <div class="counter"><span class="lab2"><i style="background:var(--neutron)"></i>نيوترونات</span><button type="button" data-k="n" data-d="-1" aria-label="أنقص نيوتروناً">−</button><b class="num" id="cN">6</b><button type="button" data-k="n" data-d="1" aria-label="أضف نيوتروناً">+</button></div>
+      <div class="counter"><span class="lab2"><i style="background:var(--electron)"></i>إلكترونات</span><button type="button" data-k="e" data-d="-1" aria-label="أنقص إلكتروناً">−</button><b class="num" id="cE">6</b><button type="button" data-k="e" data-d="1" aria-label="أضف إلكتروناً">+</button></div>
+      <div class="readout">
+        <div><span>العدد الذري (Z)</span><b class="num" id="rZ"></b></div>
+        <div><span>العدد الكتلي (A = p + n)</span><b class="num" id="rA"></b></div>
+        <div><span>الشحنة (p − e)</span><b class="num" id="rQ"></b></div>
+        <div><span>الكتلة التقريبية</span><b class="num" id="rM"></b></div>
+      </div>
+      <div class="status" id="rStatus"></div>
+    </div>
+  </div>
+  <p class="dim" id="vrNote" style="font-size:.85rem"></p>
+  <div class="check" id="qc1"></div>
+</section>
+
+<!-- GAMES -->
+<section id="games">
+  <div class="sec-head">
+    <h2>ألعاب الدرس</h2>
+    <p class="dim">ثلاث ألعاب قصيرة تُستخدم في محطات التعلّم. كل إجابة صحيحة تضيف نقاطاً إلى رصيدك في لوحة الإنجاز.</p>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <h3>تحديات باني الذرة <span class="tag tg-s">S</span><span class="tag tg-t">T</span><span class="tag tg-e">E</span></h3>
+      <p class="dim">ابنِ الذرة المطلوبة في النموذج ثلاثي الأبعاد أعلاه ثم اضغط «تحقّق». ست مهمات، 10 نقاط لكل مهمة.</p>
+      <div class="status" id="chText"></div>
+      <div class="row"><button class="btn" id="btnCh">تحقّق من ذرتي</button><button class="btn ghost" id="btnChSkip">تخطَّ المهمة</button></div>
+      <div class="feedback" id="chFb"></div>
+    </div>
+    <div class="card race">
+      <h3>سباق النيوترونات <span class="tag tg-m">M</span><span class="tag tg-s">S</span></h3>
+      <p class="dim">يظهر رمز نظير، فاختر عدد النيوترونات فيه (العدد الكتلي − العدد الذري). لديك 60 ثانية، و5 نقاط لكل إجابة صحيحة (الحد الأقصى 50).</p>
+      <div class="row" style="justify-content:space-between;align-items:center"><button class="btn" id="btnRace">ابدأ السباق</button><span>الوقت: <span class="timer" id="raceT">60</span> · النقاط: <span class="num" id="raceS">0</span></span></div>
+      <div class="big" id="raceQ"><span class="dim" style="font-size:1rem">اضغط «ابدأ السباق»</span></div>
+      <div class="opts" id="raceOpts"></div>
+      <div class="feedback" id="raceFb"></div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>مطابقة: النظائر في حياتنا <span class="tag tg-t">T</span><span class="tag tg-e">E</span><span class="tag tg-s">S</span></h3>
+    <p class="dim">اضغط على النظير ثم على استخدامه الصحيح. 5 نقاط لكل مطابقة صحيحة.</p>
+    <div class="match"><div class="col" id="mIso"></div><div class="col" id="mUse"></div></div>
+    <div class="feedback" id="mFb"></div>
+  </div>
+  <div class="check" id="qc2"></div>
+</section>
+
+<!-- MATH -->
+<section id="math">
+  <div class="sec-head">
+    <h2>مختبر الرياضيات</h2>
+    <p class="dim">الكتلة المذكورة في الجدول الدوري ليست عدداً صحيحاً لأنها متوسط موزون لكتل نظائر العنصر حسب نسبة وجود كل نظير في الطبيعة.</p>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <h3>حاسبة متوسط الكتلة الذرية <span class="tag tg-m">M</span></h3>
+      <div class="row">
+        <div class="field"><label for="avgPreset">مثال جاهز</label>
+          <select id="avgPreset"><option value="b">البورون (B)</option><option value="cl">الكلور (Cl)</option><option value="cu">النحاس (Cu)</option><option value="custom">أدخل قيمي</option></select></div>
+      </div>
+      <div class="row">
+        <div class="field"><label for="m1">كتلة النظير الأول (u)</label><input type="number" id="m1" step="0.01"></div>
+        <div class="field"><label for="p1">نسبة وجوده %</label><input type="number" id="p1" step="0.1" min="0" max="100"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label for="m2">كتلة النظير الثاني (u)</label><input type="number" id="m2" step="0.01"></div>
+        <div class="field"><label for="p2">نسبة وجوده %</label><input type="number" id="p2" step="0.1" readonly></div>
+      </div>
+      <div class="status num" id="avgOut" style="direction:rtl"></div>
+    </div>
+    <div class="card">
+      <h3>تحدّي الحساب <span class="tag tg-m">M</span></h3>
+      <p id="mathQ"></p>
+      <div class="row">
+        <div class="field"><label for="mathA">إجابتك</label><input type="number" id="mathA" step="0.01"></div>
+        <button class="btn" id="btnMath">تحقّق</button>
+        <button class="btn ghost" id="btnMathNext">سؤال جديد</button>
+      </div>
+      <div class="feedback" id="mathFb"></div>
+      <p class="dim" style="font-size:.88rem">قواعد للتذكّر: العدد الكتلي = البروتونات + النيوترونات. عدد النيوترونات = العدد الكتلي − العدد الذري. متوسط الكتلة = (كتلة النظير الأول × نسبته) + (كتلة النظير الثاني × نسبته).</p>
+    </div>
+  </div>
+  <div class="check" id="qc3"></div>
+</section>
+
+<!-- ART -->
+<section id="art">
+  <div class="sec-head">
+    <h2>صمّم بطاقة عنصر</h2>
+    <p class="dim">نشاط فني وهندسي: صمّم بطاقة لنظير تختاره بنموذج «بور» ملوّن، وفكّر كيف يساعد اختيار الألوان والأحجام على توضيح الفكرة. يمكنك تطبيق ألوانك على النموذج ثلاثي الأبعاد.</p>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <h3>لوحة التصميم <span class="tag tg-a">A</span><span class="tag tg-e">E</span></h3>
+      <div class="row">
+        <div class="field"><label for="artZ">العنصر</label><select id="artZ"></select></div>
+        <div class="field"><label for="artA">العدد الكتلي</label><select id="artA"></select></div>
+      </div>
+      <div class="swatch">
+        <div class="field"><label for="colP">البروتون</label><input type="color" id="colP" value="#ef4444"></div>
+        <div class="field"><label for="colN">النيوترون</label><input type="color" id="colN" value="#a3b1c9"></div>
+        <div class="field"><label for="colE">الإلكترون</label><input type="color" id="colE" value="#38bdf8"></div>
+        <div class="field"><label for="colBg">الخلفية</label><input type="color" id="colBg" value="#10172e"></div>
+      </div>
+      <div class="field"><label for="artWhy">لماذا اخترت هذه الألوان؟</label><input type="text" id="artWhy" value="الأحمر للبروتون لأنه موجب، والرمادي للنيوترون لأنه متعادل"></div>
+      <div class="row"><button class="btn" id="btnArt">طبّق ألواني على النموذج 3D</button><button class="btn ghost" id="btnArtDone">سلّم البطاقة</button></div>
+      <div class="feedback" id="artFb"></div>
+    </div>
+    <div class="card">
+      <h3>معاينة البطاقة</h3>
+      <canvas id="artCanvas" width="640" height="640"></canvas>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL -->
+<section id="final">
+  <div class="sec-head">
+    <h2>التقويم الختامي</h2>
+    <p class="dim">عشرة أسئلة تغطي محاور STEAM الخمسة. لكل سؤال 10 نقاط. اختر إجاباتك ثم اضغط «صحّح الاختبار».</p>
+  </div>
+  <div class="card" id="quizBox"></div>
+  <div class="row"><button class="btn" id="btnQuiz">صحّح الاختبار</button><button class="btn ghost" id="btnQuizReset">أعد الاختبار</button></div>
+  <div class="feedback" id="quizFb"></div>
+
+  <div class="card">
+    <h3>بطاقة الخروج</h3>
+    <div class="field"><label for="exitA">بجملة واحدة: ما الفرق بين العدد الذري والعدد الكتلي؟ ولماذا يُعدّ الكربون-12 والكربون-14 نظيرين؟</label><textarea id="exitA"></textarea></div>
+    <button class="btn ghost" id="btnExit">اعرض الإجابة النموذجية</button>
+    <p class="dim" id="exitModel" hidden>العدد الذري هو عدد البروتونات في النواة ويحدد نوع العنصر، أما العدد الكتلي فهو مجموع البروتونات والنيوترونات. الكربون-12 والكربون-14 نظيران لأن في كلٍّ منهما 6 بروتونات، لكن في الأول 6 نيوترونات وفي الثاني 8.</p>
+  </div>
+
+  <div class="card">
+    <h3>لوحة إنجازي</h3>
+    <div class="bar"><i id="progBar"></i></div>
+    <div class="dash" id="dash"></div>
+    <p class="dim" id="levelText"></p>
+  </div>
+
+  <div class="card">
+    <h3>سُلّم التقدير للأداء (النموذج اليدوي + بطاقة العنصر)</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>المعيار</th><th>متميّز (4)</th><th>متقن (3)</th><th>نامٍ (2)</th><th>مبتدئ (1)</th></tr></thead>
+      <tbody>
+        <tr><td>الدقة العلمية</td><td>عدد البروتونات والنيوترونات والإلكترونات صحيح ومبرّر</td><td>خطأ واحد بسيط</td><td>أخطاء في جسيم واحد</td><td>النموذج لا يمثل العنصر</td></tr>
+        <tr><td>الحسابات</td><td>العدد الكتلي وعدد النيوترونات ومتوسط الكتلة صحيحة</td><td>خطأ حسابي واحد</td><td>أخطاء متعددة</td><td>لم تُنجز الحسابات</td></tr>
+        <tr><td>التصميم الهندسي للنموذج</td><td>متين وواضح ومفتاح ألوان كامل</td><td>واضح مع مفتاح ناقص</td><td>غير متين أو غير واضح</td><td>غير مكتمل</td></tr>
+        <tr><td>الإبداع الفني</td><td>ألوان معبّرة مع تبرير علمي</td><td>تصميم جميل وتبرير مختصر</td><td>تصميم بسيط</td><td>بلا تصميم</td></tr>
+        <tr><td>العمل الجماعي والعرض</td><td>يعرض بثقة ويشارك الجميع</td><td>عرض واضح</td><td>عرض متردد</td><td>لم يعرض</td></tr>
+      </tbody>
+    </table></div>
+    <p class="dim">الدرجة من 20. الواجب المنزلي: ابحث عن نظير مشع يُستخدم في الطب، واكتب عدد البروتونات والنيوترونات فيه واستخدامه.</p>
+  </div>
+</section>
+
+<footer>المحتوى مرتبط بدرس «النواة» في فصل «تركيب الذرة» من كتاب العلوم للصف الثالث المتوسط، الفصل الدراسي الأول. قد تختلف أرقام الصفحات بين الطبعات. قيم الكتل ونسب الوجود تقريبية. نمط الواقع الافتراضي يحتاج متصفحاً يدعم WebXR.</footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function () {
+"use strict";
+var $ = function (id) { return document.getElementById(id); };
+document.documentElement.setAttribute("lang", "ar");
+
+/* ---------- element data (Z 1–20) ---------- */
+var EL = [null,
+  ["H", "هيدروجين", 1.008, [1, 2]], ["He", "هيليوم", 4.003, [3, 4]], ["Li", "ليثيوم", 6.94, [6, 7]], ["Be", "بيريليوم", 9.012, [9]],
+  ["B", "بورون", 10.81, [10, 11]], ["C", "كربون", 12.011, [12, 13]], ["N", "نيتروجين", 14.007, [14, 15]], ["O", "أكسجين", 15.999, [16, 17, 18]],
+  ["F", "فلور", 18.998, [19]], ["Ne", "نيون", 20.18, [20, 21, 22]], ["Na", "صوديوم", 22.99, [23]], ["Mg", "مغنيسيوم", 24.305, [24, 25, 26]],
+  ["Al", "ألومنيوم", 26.98, [27]], ["Si", "سيليكون", 28.085, [28, 29, 30]], ["P", "فوسفور", 30.974, [31]], ["S", "كبريت", 32.06, [32, 33, 34, 36]],
+  ["Cl", "كلور", 35.45, [35, 37]], ["Ar", "أرجون", 39.95, [36, 38, 40]], ["K", "بوتاسيوم", 39.10, [39, 41]], ["Ca", "كالسيوم", 40.08, [40, 42, 43, 44, 46, 48]]
+];
+var ISO_NAMES = { "1-1": "البروتيوم", "1-2": "الديوتيريوم", "1-3": "التريتيوم" };
+var LIM = { p: [1, 20], n: [0, 30], e: [0, 22] };
+var atom = { p: 6, n: 6, e: 6 };
+
+/* ---------- score ---------- */
+var score = { build: 0, race: 0, match: 0, math: 0, art: 0, checks: 0, quiz: 0 };
+var maxScore = { build: 60, race: 50, match: 25, math: 30, art: 10, checks: 30, quiz: 100 };
+var scoreNames = { build: "تحديات باني الذرة", race: "سباق النيوترونات", match: "مطابقة النظائر", math: "تحدّي الحساب", art: "بطاقة العنصر", checks: "التقويم البنائي", quiz: "الاختبار الختامي" };
+function setScore(k, v) { score[k] = Math.min(maxScore[k], Math.max(score[k], v)); renderScore(); }
+function renderScore() {
+  var tot = 0, max = 0;
+  Object.keys(scoreNames).forEach(function (k) { tot += score[k]; max += maxScore[k]; });
+  $("navScore").textContent = tot;
+  $("progBar").style.width = Math.round(100 * tot / max) + "%";
+  $("dash").innerHTML = Object.keys(scoreNames).map(function (k) {
+    return "<div><span>" + scoreNames[k] + "</span><b>" + score[k] + " / " + maxScore[k] + "</b></div>";
+  }).join("") + "<div><span>المجموع</span><b>" + tot + " / " + max + "</b></div>";
+  var pct = tot / max;
+  $("levelText").textContent = pct >= .85 ? "مستوى «عالِم نووي»: إتقان ممتاز لأهداف الدرس."
+    : pct >= .65 ? "مستوى «باحث في المختبر»: فهم جيد، أكمل الأنشطة المتبقية."
+    : pct >= .35 ? "مستوى «متدرّب»: تابع الألعاب والتحديات لترفع رصيدك."
+    : "ابدأ من باني الذرة: كل نشاط تكمله يضيف نقاطاً إلى لوحتك.";
+}
+
+/* ---------- generic MCQ ---------- */
+function mcq(container, q, opts, correct, explain, onDone) {
+  var wrap = document.createElement("div"); wrap.className = "q";
+  wrap.innerHTML = "<div>" + q + "</div>";
+  var box = document.createElement("div"); box.className = "opts";
+  var fb = document.createElement("div"); fb.className = "feedback";
+  var done = false;
+  opts.forEach(function (o, i) {
+    var b = document.createElement("button"); b.className = "opt"; b.type = "button"; b.textContent = o;
+    b.onclick = function () {
+      if (done) return; done = true;
+      b.classList.add(i === correct ? "right" : "wrong");
+      box.children[correct].classList.add("right");
+      fb.className = "feedback " + (i === correct ? "ok" : "no");
+      fb.textContent = (i === correct ? "إجابة صحيحة. " : "ليست هذه. ") + (explain || "");
+      if (onDone) onDone(i === correct);
+    };
+    box.appendChild(b);
+  });
+  wrap.appendChild(box); wrap.appendChild(fb); container.appendChild(wrap);
+}
+
+/* pre-test */
+(function () {
+  var box = $("preBox"), n = 0, right = 0;
+  var qs = [
+    ["ما شحنة البروتون؟", ["موجبة", "سالبة", "متعادلة", "تتغيّر"], 0, "البروتون موجب، والإلكترون سالب، والنيوترون متعادل."],
+    ["أين تتركّز معظم كتلة الذرة؟", ["في الإلكترونات", "في النواة", "في الفراغ حول النواة", "تتوزّع بالتساوي"], 1, "النواة صغيرة جداً لكنها تحمل معظم الكتلة."],
+    ["من العالِم الذي اكتشف النواة بتجربة رقائق الذهب؟", ["دالتون", "طومسون", "رذرفورد", "بور"], 2, "استنتج رذرفورد وجود نواة صغيرة موجبة في مركز الذرة."],
+    ["في الذرة المتعادلة كهربائياً يكون:", ["عدد البروتونات = عدد النيوترونات", "عدد البروتونات = عدد الإلكترونات", "عدد الإلكترونات = صفر", "عدد النيوترونات = عدد الإلكترونات"], 1, "تتعادل الشحنات الموجبة مع السالبة."]
+  ];
+  var summary = document.createElement("p"); summary.className = "dim";
+  qs.forEach(function (q) { mcq(box, q[0], q[1], q[2], q[3], function (ok) { n++; if (ok) right++; if (n === qs.length) summary.textContent = "أجبت عن " + right + " من 4 قبل الدرس. ستبني على هذه المعرفة في باني الذرة."; }); });
+  box.appendChild(summary);
+})();
+
+function quickCheck(id, label, q, opts, c, ex) {
+  var el = $(id);
+  el.innerHTML = '<span class="lab">تقويم بنائي · ' + label + "</span>";
+  mcq(el, q, opts, c, ex, function (ok) { if (ok) { score.checks = Math.min(30, score.checks + 10); renderScore(); } });
+}
+quickCheck("qc1", "بعد الاستكشاف", "جرّب في باني الذرة: ماذا يحدث عندما تضيف بروتوناً واحداً إلى ذرة الكربون؟", ["يصبح نظيراً آخر للكربون", "يتحول إلى عنصر جديد هو النيتروجين", "تقل كتلته", "لا يتغيّر شيء"], 1, "العدد الذري يصبح 7، وهذا هو النيتروجين. البروتونات تحدد هوية العنصر.");
+quickCheck("qc2", "بعد الألعاب", "ما الذي يشترك فيه نظيرا الهيدروجين: الديوتيريوم والتريتيوم؟", ["عدد النيوترونات", "العدد الكتلي", "عدد البروتونات", "الكتلة"], 2, "لكل نظائر الهيدروجين بروتون واحد، وتختلف في النيوترونات.");
+quickCheck("qc3", "بعد مختبر الرياضيات", "لماذا الكتلة الذرية للكلور في الجدول الدوري 35.45 وليست عدداً صحيحاً؟", ["لأنها خطأ في القياس", "لأنها متوسط موزون لكتلتي النظيرين 35 و37", "لأن الإلكترونات ثقيلة", "لأن الكلور غاز"], 1, "الكلور-35 يشكّل نحو 76%، والكلور-37 نحو 24%.");
+
+/* ---------- atom info ---------- */
+function shells(e) { var cap = [2, 8, 8, 8], out = []; for (var i = 0; i < cap.length && e > 0; i++) { out.push(Math.min(cap[i], e)); e -= cap[i]; } return out; }
+function describe(a) {
+  var el = EL[a.p], A = a.p + a.n, q = a.p - a.e;
+  var stable = el[3].indexOf(A) >= 0;
+  var isoName = ISO_NAMES[a.p + "-" + A] || (el[1] + "-" + A);
+  return { el: el, A: A, q: q, stable: stable, iso: isoName };
+}
+function notationHTML(sym, A, Z, q) {
+  var qs = q === 0 ? "" : (Math.abs(q) > 1 ? Math.abs(q) : "") + (q > 0 ? "+" : "−");
+  return '<span class="st"><span>' + A + "</span><span>" + Z + "</span></span><span>" + sym + "</span>" + (qs ? '<sup style="font-size:.9rem">' + qs + "</sup>" : "");
+}
+function renderReadout() {
+  var d = describe(atom);
+  $("cP").textContent = atom.p; $("cN").textContent = atom.n; $("cE").textContent = atom.e;
+  $("eZ").textContent = atom.p; $("eSym").textContent = d.el[0]; $("eName").textContent = d.el[1];
+  $("eNot").innerHTML = notationHTML(d.el[0], d.A, atom.p, d.q);
+  $("eIso").textContent = "النظير: " + d.iso;
+  $("rZ").textContent = atom.p; $("rA").textContent = d.A;
+  $("rQ").textContent = d.q === 0 ? "0 (متعادلة)" : (d.q > 0 ? "+" + d.q : "−" + Math.abs(d.q));
+  $("rM").textContent = "≈ " + d.A + " u";
+  var parts = [];
+  parts.push(d.q === 0 ? "ذرة متعادلة" : d.q > 0 ? "أيون موجب (فقد إلكترونات)" : "أيون سالب (اكتسب إلكترونات)");
+  parts.push(d.stable ? "نظير مستقر موجود في الطبيعة" : "نظير غير مستقر (مشع) أو نادر جداً");
+  $("rStatus").innerHTML = parts.join(" · ") + "<br><span class='dim'>توزيع الإلكترونات: " + (atom.e ? shells(atom.e).join("، ") : "لا إلكترونات") + "</span>";
+}
+
+/* ---------- 3D ---------- */
+var three = { ok: false, rebuild: function () {}, setColors: function () {} };
+function initScene() {
+  if (!window.THREE || !THREE.OrbitControls) { $("loading").textContent = "تعذّر تحميل مكتبة الرسم ثلاثي الأبعاد. تحقّق من الاتصال بالإنترنت ثم أعد تحميل الصفحة. باقي أنشطة الدرس تعمل."; return; }
+  var host = $("scene");
+  var renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.xr.enabled = true;
+  host.appendChild(renderer.domElement);
+  var scene = new THREE.Scene();
+  var camera = new THREE.PerspectiveCamera(55, 1, 0.05, 1000);
+  var rig = new THREE.Group(); rig.add(camera); scene.add(rig);
+  camera.position.set(0, 6, 26);
+  var controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true; controls.minDistance = 3; controls.maxDistance = 70;
+
+  scene.add(new THREE.AmbientLight(0x6070a0, 0.6));
+  var dl = new THREE.DirectionalLight(0xffffff, 1.1); dl.position.set(10, 14, 12); scene.add(dl);
+  var pl = new THREE.PointLight(0xffd59a, 0.8, 30); scene.add(pl);
+
+  // background dust
+  var sg = new THREE.BufferGeometry(), pts = [];
+  for (var i = 0; i < 1500; i++) { var v = new THREE.Vector3(Math.random() - .5, Math.random() - .5, Math.random() - .5).normalize().multiplyScalar(150 + Math.random() * 200); pts.push(v.x, v.y, v.z); }
+  sg.setAttribute("position", new THREE.Float32BufferAttribute(pts, 3));
+  scene.add(new THREE.Points(sg, new THREE.PointsMaterial({ color: 0x8090c0, size: 1.4, sizeAttenuation: false })));
+
+  var mats = {
+    p: new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: .45, metalness: .1 }),
+    n: new THREE.MeshStandardMaterial({ color: 0xa3b1c9, roughness: .5, metalness: .1 }),
+    e: new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0b4f6c, roughness: .3 })
+  };
+  var nucGeo = new THREE.SphereGeometry(0.5, 24, 16), eGeo = new THREE.SphereGeometry(0.28, 16, 12);
+  var nucleus = new THREE.Group(); scene.add(nucleus);
+  var shellGroup = new THREE.Group(); scene.add(shellGroup);
+  var electrons = [];
+  var tilts = [[0.3, 0], [1.1, 0.6], [-0.7, 1.2], [0.2, -1.0]];
+
+  three.rebuild = function () {
+    while (nucleus.children.length) nucleus.remove(nucleus.children[0]);
+    while (shellGroup.children.length) shellGroup.remove(shellGroup.children[0]);
+    electrons = [];
+    var A = atom.p + atom.n, R = 0.62 * Math.cbrt(A), golden = Math.PI * (3 - Math.sqrt(5));
+    // interleave protons and neutrons
+    var kinds = [], pi = 0, ni = 0;
+    for (var k = 0; k < A; k++) { var wantP = (pi / Math.max(1, atom.p)) <= (ni / Math.max(1, atom.n)); if ((wantP && pi < atom.p) || ni >= atom.n) { kinds.push("p"); pi++; } else { kinds.push("n"); ni++; } }
+    for (var j = 0; j < A; j++) {
+      var y = A === 1 ? 0 : 1 - (j / (A - 1)) * 2, rad = Math.sqrt(1 - y * y), th = golden * j;
+      var rr = A === 1 ? 0 : R * Math.cbrt((j + 0.5) / A);
+      var m = new THREE.Mesh(nucGeo, mats[kinds[j]]);
+      m.position.set(Math.cos(th) * rad * rr, y * rr, Math.sin(th) * rad * rr);
+      m.userData = { kind: kinds[j] }; nucleus.add(m);
+    }
+    var sh = shells(atom.e);
+    sh.forEach(function (count, si) {
+      var r = 4 + si * 2.8;
+      var plane = new THREE.Group(); plane.rotation.set(tilts[si][0], tilts[si][1], 0);
+      var ring = new THREE.Mesh(new THREE.TorusGeometry(r, 0.03, 8, 128), new THREE.MeshBasicMaterial({ color: 0x3b4a85 }));
+      ring.rotation.x = Math.PI / 2; plane.add(ring);
+      for (var c = 0; c < count; c++) {
+        var em = new THREE.Mesh(eGeo, mats.e); em.userData = { kind: "e" };
+        plane.add(em); electrons.push({ m: em, r: r, a: (c / count) * Math.PI * 2, w: 1.6 / (si + 1) });
+      }
+      shellGroup.add(plane);
+    });
+  };
+  three.setColors = function (cp, cn, ce) { mats.p.color.set(cp); mats.n.color.set(cn); mats.e.color.set(ce); mats.e.emissive.set(ce).multiplyScalar(0.25); };
+
+  function resize() { var w = host.clientWidth, h = host.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+  window.addEventListener("resize", resize); resize();
+
+  // picking
+  var PART = {
+    p: ["البروتون", "الشحنة: موجبة (+1)", "الكتلة: ≈ 1 u", "المكان: داخل النواة", "عدده هو العدد الذري، وهو الذي يحدد نوع العنصر."],
+    n: ["النيوترون", "الشحنة: متعادلة (0)", "الكتلة: ≈ 1 u", "المكان: داخل النواة", "تغيير عدده يغيّر كتلة الذرة دون تغيير العنصر، فينتج نظير جديد."],
+    e: ["الإلكترون", "الشحنة: سالبة (−1)", "الكتلة: ≈ 1/1836 من كتلة البروتون", "المكان: حول النواة في مستويات الطاقة", "لا يدخل في حساب العدد الكتلي لأن كتلته صغيرة جداً."]
+  };
+  var ray = new THREE.Raycaster(), ptr = new THREE.Vector2(), down = null;
+  renderer.domElement.addEventListener("pointerdown", function (e) { down = [e.clientX, e.clientY]; });
+  renderer.domElement.addEventListener("pointerup", function (e) {
+    if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 6) return;
+    var r = renderer.domElement.getBoundingClientRect();
+    ptr.x = ((e.clientX - r.left) / r.width) * 2 - 1; ptr.y = -((e.clientY - r.top) / r.height) * 2 + 1;
+    ray.setFromCamera(ptr, camera);
+    var hits = ray.intersectObjects(nucleus.children.concat(electrons.map(function (x) { return x.m; })));
+    if (!hits.length) return;
+    var P = PART[hits[0].object.userData.kind], el = $("info");
+    $("tourbox").hidden = true;
+    el.hidden = false;
+    el.innerHTML = '<button class="x" aria-label="إغلاق" id="infoX">×</button><h3>' + P[0] + "</h3><div>" + P[1] + "</div><div>" + P[2] + "</div><div>" + P[3] + "</div><p class='dim'>" + P[4] + "</p>";
+    $("infoX").onclick = function () { el.hidden = true; };
+  });
+
+  // tour
+  var TOUR = [
+    { pos: [0, 6, 26], look: [0, 0, 0], t: "هذه ذرة الكربون-12. في المركز النواة، وحولها الإلكترونات في مستويات الطاقة." },
+    { pos: [2.5, 2, 5], look: [0, 0, 0], t: "اقتربنا من النواة: فيها البروتونات الحمراء الموجبة والنيوترونات الرمادية المتعادلة. تتركّز فيها معظم كتلة الذرة." },
+    { pos: [-3, 1, 4.5], look: [0, 0, 0], t: "عدد البروتونات = العدد الذري. للكربون 6 بروتونات دائماً؛ لو تغيّر هذا العدد لأصبح عنصراً آخر." },
+    { pos: [4, 3, 3.5], look: [0, 0, 0], t: "العدد الكتلي = البروتونات + النيوترونات = 6 + 6 = 12. لذلك نسميه الكربون-12." },
+    { pos: [0, 12, 18], look: [0, 0, 0], t: "الإلكترونات السالبة تدور في مستويات: 2 في الأول و4 في الثاني. عددها يساوي البروتونات في الذرة المتعادلة." },
+    { pos: [6, 4, 14], look: [0, 0, 0], t: "أضفنا نيوترونين: صار عندنا الكربون-14، وهو نظير للكربون. العنصر نفسه، وكتلة أكبر. يُستخدم في تقدير عمر الآثار.", iso: 8 }
+  ];
+  var state = { paused: false, tour: null };
+  function setTour(i) {
+    state.tour = { i: i, t: 0 };
+    var s = TOUR[i];
+    atom = { p: 6, n: s.iso || 6, e: 6 }; renderReadout(); three.rebuild();
+    $("tourbox").hidden = false; $("info").hidden = true;
+    $("tourbox").innerHTML = "<b>المحطة " + (i + 1) + " من " + TOUR.length + "</b><br>" + s.t;
+  }
+  function stopTour() { state.tour = null; $("tourbox").hidden = true; $("btnTour").textContent = "ابدأ الجولة الافتراضية"; }
+  $("btnTour").onclick = function () { if (state.tour) stopTour(); else { setTour(0); this.textContent = "أوقف الجولة"; } };
+
+  // VR
+  var vrBtn = $("btnVR"), vrSession = null;
+  function vrUnsupported(msg) { vrBtn.disabled = true; $("vrNote").textContent = msg; }
+  if (navigator.xr && navigator.xr.isSessionSupported) {
+    navigator.xr.isSessionSupported("immersive-vr").then(function (ok) {
+      if (!ok) vrUnsupported("نمط الواقع الافتراضي غير متاح على هذا الجهاز. افتح الصفحة من متصفح نظارة VR (مثل متصفح Meta Quest) لتقف داخل الذرة، أو استخدم «الجولة الافتراضية» على الشاشة.");
+      else $("vrNote").textContent = "نظارة الواقع الافتراضي جاهزة: اضغط زر VR ثم ضع النظارة. شغّل الجولة لتنتقل داخل الذرة.";
+    }).catch(function () { vrUnsupported("تعذّر التحقق من دعم الواقع الافتراضي في هذا المتصفح."); });
+  } else vrUnsupported("هذا المتصفح لا يدعم WebXR. افتح الصفحة من متصفح نظارة VR لتجربة الدرس بشكل غامر، أو استخدم «الجولة الافتراضية».");
+  vrBtn.onclick = function () {
+    if (vrSession) { vrSession.end(); return; }
+    navigator.xr.requestSession("immersive-vr", { optionalFeatures: ["local-floor"] }).then(function (s) {
+      vrSession = s; renderer.xr.setSession(s); rig.position.set(0, -1.2, 14); vrBtn.textContent = "اخرج من VR";
+      s.addEventListener("end", function () { vrSession = null; rig.position.set(0, 0, 0); vrBtn.textContent = "الواقع الافتراضي (VR)"; });
+    }).catch(function () { $("vrNote").textContent = "لم يبدأ نمط الواقع الافتراضي. تأكد من اتصال النظارة ثم حاول مرة أخرى."; });
+  };
+
+  $("btnPause").onclick = function () { state.paused = !state.paused; this.textContent = state.paused ? "شغّل الحركة" : "إيقاف الحركة"; this.classList.toggle("on", state.paused); };
+
+  var clock = new THREE.Clock(), desired = new THREE.Vector3(), look = new THREE.Vector3();
+  renderer.setAnimationLoop(function () {
+    var dt = Math.min(clock.getDelta(), 0.1), k = state.paused ? 0 : 1;
+    nucleus.rotation.y += dt * 0.25 * k; nucleus.rotation.x += dt * 0.08 * k;
+    electrons.forEach(function (x) { x.a += x.w * dt * k; x.m.position.set(Math.cos(x.a) * x.r, Math.sin(x.a) * x.r, 0); });
+    if (state.tour) {
+      var s = TOUR[state.tour.i]; state.tour.t += dt;
+      desired.set(s.pos[0], s.pos[1], s.pos[2]); look.set(s.look[0], s.look[1], s.look[2]);
+      if (renderer.xr.isPresenting) { desired.y -= 1.5; rig.position.lerp(desired, 0.02); }
+      else { camera.position.lerp(desired, 0.04); controls.target.lerp(look, 0.08); }
+      if (state.tour.t > 8) { if (state.tour.i + 1 < TOUR.length) setTour(state.tour.i + 1); else stopTour(); }
+    }
+    if (!renderer.xr.isPresenting) controls.update();
+    renderer.render(scene, camera);
+  });
+  three.rebuild();
+  $("loading").hidden = true;
+  three.ok = true;
+}
+
+/* builder controls */
+function change(k, d) {
+  var v = atom[k] + d; if (v < LIM[k][0] || v > LIM[k][1]) return;
+  atom[k] = v; renderReadout(); three.rebuild();
+}
+[].forEach.call(document.querySelectorAll(".counter button"), function (b) { b.onclick = function () { change(b.dataset.k, +b.dataset.d); }; });
+$("btnReset").onclick = function () { atom = { p: 6, n: 6, e: 6 }; renderReadout(); three.rebuild(); };
+renderReadout();
+try { initScene(); } catch (err) { $("loading").textContent = "تعذّر تشغيل النموذج ثلاثي الأبعاد على هذا الجهاز (يحتاج WebGL). يمكنك استخدام الأرقام في اللوحة الجانبية."; }
+
+/* ---------- builder challenges ---------- */
+var CH = [
+  { t: "ابنِ ذرة هيليوم-4 متعادلة.", p: 2, n: 2, e: 2 },
+  { t: "ابنِ الديوتيريوم: نظير الهيدروجين الذي عدده الكتلي 2 (متعادل).", p: 1, n: 1, e: 1 },
+  { t: "ابنِ ذرة بورون-11 متعادلة.", p: 5, n: 6, e: 5 },
+  { t: "ابنِ نظير الكربون-14 المتعادل المستخدم في تقدير عمر الآثار.", p: 6, n: 8, e: 6 },
+  { t: "ابنِ ذرة أكسجين-18 متعادلة.", p: 8, n: 10, e: 8 },
+  { t: "ابنِ أيون الصوديوم-23 الموجب (Na⁺): فقد إلكتروناً واحداً.", p: 11, n: 12, e: 10 }
+];
+var chI = 0, chDone = 0;
+function chShow() {
+  if (chI >= CH.length) { $("chText").innerHTML = "أنهيت كل المهمات. حصلت على " + chDone * 10 + " من 60 نقطة."; $("btnCh").disabled = true; $("btnChSkip").disabled = true; return; }
+  $("chText").innerHTML = "<b>المهمة " + (chI + 1) + " من " + CH.length + ":</b> " + CH[chI].t;
+}
+$("btnCh").onclick = function () {
+  var c = CH[chI], fb = $("chFb"), errs = [];
+  if (atom.p !== c.p) errs.push("عدد البروتونات يحدد العنصر؛ تحقّق منه (المطلوب عنصر عدده الذري " + c.p + ")");
+  if (atom.p === c.p && atom.n !== c.n) errs.push("العنصر صحيح، لكن عدد النيوترونات لا يعطي العدد الكتلي المطلوب");
+  if (atom.e !== c.e) errs.push("راجع عدد الإلكترونات والشحنة المطلوبة");
+  if (errs.length) { fb.className = "feedback no"; fb.textContent = errs.join(". ") + "."; return; }
+  chDone++; setScore("build", chDone * 10);
+  fb.className = "feedback ok"; fb.textContent = "أحسنت! " + c.p + " بروتون + " + c.n + " نيوترون = العدد الكتلي " + (c.p + c.n) + ". (+10)";
+  chI++; chShow();
+};
+$("btnChSkip").onclick = function () { $("chFb").className = "feedback"; $("chFb").textContent = "تخطّيت المهمة."; chI++; chShow(); };
+chShow();
+
+/* ---------- neutron race ---------- */
+var race = null;
+function raceQ() {
+  var z = 1 + Math.floor(Math.random() * 20), el = EL[z];
+  var pool = el[3].concat([el[3][el[3].length - 1] + 1]);
+  var A = pool[Math.floor(Math.random() * pool.length)];
+  if (z === 6 && Math.random() < .4) A = 14;
+  var ans = A - z, opts = [ans];
+  [A, z, ans + 1, ans - 1, ans + 2].forEach(function (o) { if (opts.length < 4 && o >= 0 && opts.indexOf(o) < 0) opts.push(o); });
+  opts.sort(function () { return Math.random() - .5; });
+  race.ans = ans;
+  $("raceQ").innerHTML = '<span class="notation">' + notationHTML(el[0], A, z, 0) + '</span><div class="dim" style="font-size:.9rem">' + el[1] + "-" + A + "</div>";
+  var box = $("raceOpts"); box.innerHTML = "";
+  opts.forEach(function (o) {
+    var b = document.createElement("button"); b.type = "button"; b.className = "opt num"; b.style.textAlign = "center"; b.textContent = o;
+    b.onclick = function () {
+      if (!race || !race.on) return;
+      if (o === ans) { race.s += 5; $("raceFb").className = "feedback ok"; $("raceFb").textContent = "صحيح: " + A + " − " + z + " = " + ans; }
+      else { $("raceFb").className = "feedback no"; $("raceFb").textContent = "خطأ: النيوترونات = " + A + " − " + z + " = " + ans; }
+      $("raceS").textContent = race.s; raceQ();
+    };
+    box.appendChild(b);
+  });
+}
+$("btnRace").onclick = function () {
+  if (race && race.on) return;
+  race = { on: true, s: 0, t: 60 }; $("raceS").textContent = 0; $("raceT").textContent = 60; $("raceFb").textContent = "";
+  this.disabled = true; raceQ();
+  var btn = this;
+  race.timer = setInterval(function () {
+    race.t--; $("raceT").textContent = race.t;
+    if (race.t <= 0) {
+      clearInterval(race.timer); race.on = false; btn.disabled = false; btn.textContent = "العب مرة أخرى";
+      $("raceOpts").innerHTML = ""; $("raceQ").innerHTML = "<span style='font-size:1.2rem'>انتهى الوقت! نقاطك: " + race.s + "</span>";
+      setScore("race", race.s);
+    }
+  }, 1000);
+};
+
+/* ---------- isotope uses matching ---------- */
+var USES = [
+  ["الكربون-14", "تقدير عمر الآثار والمستحثات"],
+  ["اليود-131", "تشخيص وعلاج أمراض الغدة الدرقية"],
+  ["الكوبالت-60", "علاج السرطان بالإشعاع وتعقيم الأدوات الطبية"],
+  ["الأمريسيوم-241", "أجهزة كشف الدخان في المنازل"],
+  ["اليورانيوم-235", "وقود محطات الطاقة النووية"]
+];
+(function () {
+  var iso = $("mIso"), use = $("mUse"), sel = null, matched = 0, wrong = 0;
+  var order = USES.map(function (_, i) { return i; }).sort(function () { return Math.random() - .5; });
+  USES.forEach(function (u, i) {
+    var b = document.createElement("button"); b.type = "button"; b.className = "mbtn"; b.textContent = u[0]; b.dataset.i = i;
+    b.onclick = function () { if (b.classList.contains("done")) return; [].forEach.call(iso.children, function (c) { c.classList.remove("sel"); }); b.classList.add("sel"); sel = b; };
+    iso.appendChild(b);
+  });
+  order.forEach(function (i) {
+    var b = document.createElement("button"); b.type = "button"; b.className = "mbtn"; b.textContent = USES[i][1];
+    b.onclick = function () {
+      if (b.classList.contains("done")) return;
+      if (!sel) { $("mFb").className = "feedback"; $("mFb").textContent = "اختر النظير من العمود الأول أولاً."; return; }
+      if (+sel.dataset.i === i) {
+        sel.classList.remove("sel"); sel.classList.add("done"); b.classList.add("done"); sel = null; matched++;
+        $("mFb").className = "feedback ok"; $("mFb").textContent = "مطابقة صحيحة! (" + matched + " من 5)";
+        if (matched === 5) { var pts = Math.max(0, 25 - wrong * 2); $("mFb").textContent = "أكملت المطابقة بـ " + wrong + " أخطاء. حصلت على " + pts + " نقطة."; setScore("match", pts); }
+      } else { wrong++; b.classList.remove("shake"); void b.offsetWidth; b.classList.add("shake"); $("mFb").className = "feedback no"; $("mFb").textContent = "ليست مطابقة صحيحة، حاول مرة أخرى."; }
+    };
+    use.appendChild(b);
+  });
+})();
+
+/* ---------- math ---------- */
+var PRE = { b: [10.013, 19.9, 11.009, "البورون"], cl: [34.969, 75.8, 36.966, "الكلور"], cu: [62.930, 69.2, 64.928, "النحاس"] };
+function fmt(n, d) { return (+n.toFixed(d)).toString(); }
+function calcAvg() {
+  var m1 = +$("m1").value, p1 = Math.min(100, Math.max(0, +$("p1").value)), m2 = +$("m2").value, p2 = 100 - p1;
+  $("p2").value = fmt(p2, 1);
+  var avg = m1 * p1 / 100 + m2 * p2 / 100;
+  $("avgOut").innerHTML = "(" + fmt(m1, 3) + " × " + fmt(p1 / 100, 3) + ") + (" + fmt(m2, 3) + " × " + fmt(p2 / 100, 3) + ") = <b>" + fmt(avg, 2) + " u</b>";
+}
+$("avgPreset").onchange = function () { var p = PRE[this.value]; if (p) { $("m1").value = p[0]; $("p1").value = p[1]; $("m2").value = p[2]; } calcAvg(); };
+["m1", "p1", "m2"].forEach(function (id) { $(id).addEventListener("input", function () { $("avgPreset").value = "custom"; calcAvg(); }); });
+$("avgPreset").onchange();
+
+var mq, mathSolved = 0;
+function newMathQ() {
+  var type = Math.floor(Math.random() * 3), z = 1 + Math.floor(Math.random() * 20), el = EL[z], A = el[3][Math.floor(Math.random() * el[3].length)];
+  if (type === 0) mq = { q: "ذرة " + el[1] + " عددها الذري <b class='num'>" + z + "</b> وعددها الكتلي <b class='num'>" + A + "</b>. كم نيوتروناً في نواتها؟", ans: A - z, tol: 0, how: A + " − " + z + " = " + (A - z) };
+  else if (type === 1) mq = { q: "نواة فيها <b class='num'>" + z + "</b> بروتوناً و<b class='num'>" + (A - z) + "</b> نيوتروناً. ما عددها الكتلي؟", ans: A, tol: 0, how: z + " + " + (A - z) + " = " + A };
+  else { var p1 = 10 + Math.floor(Math.random() * 8) * 10, m1 = 20 + Math.floor(Math.random() * 10), m2 = m1 + 2;
+    var avg = (m1 * p1 + m2 * (100 - p1)) / 100;
+    mq = { q: "لعنصر نظيران: كتلة الأول <b class='num'>" + m1 + " u</b> بنسبة <b class='num'>" + p1 + "%</b>، والثاني <b class='num'>" + m2 + " u</b> بنسبة <b class='num'>" + (100 - p1) + "%</b>. احسب متوسط الكتلة الذرية.", ans: avg, tol: 0.05, how: "(" + m1 + " × " + p1 / 100 + ") + (" + m2 + " × " + (100 - p1) / 100 + ") = " + fmt(avg, 2) }; }
+  mq.done = false;
+  $("mathQ").innerHTML = mq.q; $("mathA").value = ""; $("mathFb").textContent = "";
+}
+$("btnMath").onclick = function () {
+  var a = parseFloat($("mathA").value);
+  if (isNaN(a)) { $("mathFb").className = "feedback no"; $("mathFb").textContent = "اكتب رقماً في خانة الإجابة أولاً."; return; }
+  var ok = Math.abs(a - mq.ans) <= mq.tol + 1e-9;
+  $("mathFb").className = "feedback " + (ok ? "ok" : "no");
+  $("mathFb").textContent = ok ? "صحيح! " + mq.how + (mq.done ? "" : " (+10)") : "ليست صحيحة. راجع القاعدة أسفل التحدي وحاول مرة أخرى.";
+  if (ok && !mq.done) { mq.done = true; mathSolved = Math.min(3, mathSolved + 1); setScore("math", mathSolved * 10); }
+};
+$("btnMathNext").onclick = newMathQ; newMathQ();
+
+/* ---------- art card ---------- */
+(function () {
+  var zs = $("artZ"), as = $("artA");
+  for (var z = 1; z <= 20; z++) { var o = document.createElement("option"); o.value = z; o.textContent = EL[z][1] + " (" + EL[z][0] + ")"; if (z === 6) o.selected = true; zs.appendChild(o); }
+  function fillA() { var el = EL[+zs.value]; as.innerHTML = ""; var list = el[3].slice(); if (+zs.value === 6) list.push(14); if (+zs.value === 1) list.push(3);
+    list.forEach(function (A) { var o = document.createElement("option"); o.value = A; o.textContent = A; as.appendChild(o); }); }
+  fillA();
+  var cv = $("artCanvas"), x = cv.getContext("2d");
+  function draw() {
+    var z = +zs.value, A = +as.value, el = EL[z], W = 640, c = W / 2;
+    var cp = $("colP").value, cn = $("colN").value, ce = $("colE").value, bg = $("colBg").value;
+    x.fillStyle = bg; x.fillRect(0, 0, W, W);
+    x.strokeStyle = cp; x.lineWidth = 6; x.strokeRect(14, 14, W - 28, W - 28);
+    var sh = shells(z);
+    sh.forEach(function (n, i) {
+      var r = 120 + i * 70;
+      x.strokeStyle = "rgba(255,255,255,.35)"; x.lineWidth = 2; x.beginPath(); x.arc(c, c + 20, r, 0, Math.PI * 2); x.stroke();
+      for (var k = 0; k < n; k++) { var a = k / n * Math.PI * 2 - Math.PI / 2; x.fillStyle = ce; x.beginPath(); x.arc(c + Math.cos(a) * r, c + 20 + Math.sin(a) * r, 11, 0, Math.PI * 2); x.fill(); }
+    });
+    var golden = Math.PI * (3 - Math.sqrt(5)), R = 14 * Math.sqrt(A);
+    for (var j = 0; j < A; j++) { var rr = R * Math.sqrt((j + .5) / A), th = j * golden; x.fillStyle = (j % Math.max(1, Math.round(A / z)) === 0 && j / Math.round(A / z) < z) ? cp : cn;
+      x.beginPath(); x.arc(c + Math.cos(th) * rr, c + 20 + Math.sin(th) * rr, 12, 0, Math.PI * 2); x.fill(); }
+    x.fillStyle = "#ffffff"; x.textAlign = "left"; x.font = "500 64px 'IBM Plex Mono', monospace"; x.fillText(el[0], 40, 100);
+    x.font = "500 26px 'IBM Plex Mono', monospace"; x.fillText(A, 40, 140 - 80); x.fillText("Z = " + z, 40, 600);
+    x.textAlign = "right"; x.font = "700 38px 'IBM Plex Sans Arabic', sans-serif"; x.fillText(el[1] + "-" + A, W - 40, 90);
+    x.font = "500 22px 'IBM Plex Sans Arabic', sans-serif"; x.fillText("بروتونات " + z + " · نيوترونات " + (A - z) + " · إلكترونات " + z, W - 40, 600);
+    $("lgP").style.background = cp;
+  }
+  zs.onchange = function () { fillA(); draw(); };
+  ["artA", "colP", "colN", "colE", "colBg"].forEach(function (id) { $(id).addEventListener("input", draw); });
+  draw();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
+  $("btnArt").onclick = function () {
+    three.setColors($("colP").value, $("colN").value, $("colE").value);
+    $("lgP").style.background = $("colP").value; $("lgN").style.background = $("colN").value; $("lgE").style.background = $("colE").value;
+    var z = +zs.value, A = +as.value; atom = { p: z, n: A - z, e: z }; renderReadout(); three.rebuild();
+    $("artFb").className = "feedback ok"; $("artFb").textContent = three.ok ? "طُبّقت ألوانك، وأصبح النموذج ثلاثي الأبعاد يعرض " + EL[z][1] + "-" + A + "." : "النموذج ثلاثي الأبعاد غير متاح على هذا الجهاز، لكن البطاقة جاهزة للعرض.";
+  };
+  $("btnArtDone").onclick = function () {
+    var why = $("artWhy").value.trim();
+    if (why.length < 10) { $("artFb").className = "feedback no"; $("artFb").textContent = "اكتب سبب اختيار ألوانك بجملة كاملة قبل التسليم."; return; }
+    $("artFb").className = "feedback ok"; $("artFb").textContent = "سُلّمت البطاقة. اعرضها على مجموعتك واشرح سبب اختيارك. (+10)"; setScore("art", 10);
+  };
+})();
+
+/* ---------- final quiz ---------- */
+var QUIZ = [
+  ["S", "العدد الذري للعنصر يساوي عدد:", ["النيوترونات", "البروتونات", "البروتونات والنيوترونات", "مستويات الطاقة"], 1],
+  ["S", "النظائر ذرات للعنصر نفسه تختلف في عدد:", ["البروتونات", "الإلكترونات فقط", "النيوترونات", "مستويات الطاقة"], 2],
+  ["M", "ذرة عددها الذري 6 وعددها الكتلي 14. كم نيوتروناً فيها؟", ["6", "8", "14", "20"], 1],
+  ["M", "ما العدد الكتلي لنواة فيها 17 بروتوناً و20 نيوتروناً؟", ["3", "17", "20", "37"], 3],
+  ["S", "أي الجسيمات التالية متعادل الشحنة ويوجد في النواة؟", ["البروتون", "النيوترون", "الإلكترون", "الأيون"], 1],
+  ["M", "للبورون نظيران: البورون-10 بنسبة 20% والبورون-11 بنسبة 80%. متوسط كتلته الذرية تقريباً:", ["10.2 u", "10.5 u", "10.8 u", "11 u"], 2],
+  ["T", "أي النظائر يستخدمه العلماء لتقدير عمر المستحثات والآثار؟", ["الكربون-12", "الكربون-14", "الأكسجين-16", "اليورانيوم-238"], 1],
+  ["E", "تصمّم مجموعة نموذجين من الخرز للكربون-12 والكربون-14. بماذا يختلف النموذجان؟", ["عدد الخرز الأحمر (البروتونات)", "عدد الخرز الرمادي (النيوترونات) فقط", "عدد الخرز الأزرق (الإلكترونات)", "لا يختلفان"], 1],
+  ["S", "ذرة فيها 11 بروتوناً و10 إلكترونات، فهي:", ["ذرة متعادلة", "أيون موجب", "أيون سالب", "نظير جديد"], 1],
+  ["A", "لماذا نستخدم لوناً مختلفاً لكل جسيم عند رسم نموذج الذرة؟", ["للزينة فقط", "لأن الجسيمات لها ألوان حقيقية", "للتمييز بين الجسيمات وشحناتها بسهولة", "لأن ذلك يغيّر كتلتها"], 2]
+];
+var quizSel = [];
+function renderQuiz() {
+  var box = $("quizBox"); box.innerHTML = ""; quizSel = QUIZ.map(function () { return -1; });
+  QUIZ.forEach(function (q, qi) {
+    var w = document.createElement("div"); w.className = "q";
+    w.innerHTML = "<div><span class='tag tg-" + q[0].toLowerCase() + "'>" + q[0] + "</span> <span class='num'>" + (qi + 1) + ".</span> " + q[1] + "</div>";
+    var o = document.createElement("div"); o.className = "opts";
+    q[2].forEach(function (t, i) {
+      var b = document.createElement("button"); b.type = "button"; b.className = "opt"; b.textContent = t;
+      b.onclick = function () { if (box.dataset.locked) return; quizSel[qi] = i; [].forEach.call(o.children, function (c, j) { c.classList.toggle("sel", j === i); }); };
+      o.appendChild(b);
+    });
+    w.appendChild(o); box.appendChild(w);
+  });
+  delete box.dataset.locked; $("quizFb").textContent = "";
+}
+$("btnQuiz").onclick = function () {
+  var box = $("quizBox");
+  if (box.dataset.locked) return;
+  var blank = quizSel.filter(function (v) { return v < 0; }).length;
+  if (blank) { $("quizFb").className = "feedback no"; $("quizFb").textContent = "بقيت " + blank + " أسئلة دون إجابة. أجب عن كل الأسئلة ثم صحّح."; return; }
+  box.dataset.locked = "1"; var right = 0;
+  QUIZ.forEach(function (q, qi) {
+    var opts = box.children[qi].querySelector(".opts").children;
+    opts[q[3]].classList.add("right");
+    if (quizSel[qi] === q[3]) right++; else opts[quizSel[qi]].classList.add("wrong");
+  });
+  var pct = right * 10;
+  $("quizFb").className = "feedback " + (pct >= 60 ? "ok" : "no");
+  $("quizFb").textContent = "أجبت عن " + right + " من 10 بشكل صحيح (" + pct + "%). " + (pct >= 90 ? "ممتاز!" : pct >= 75 ? "جيد جداً." : pct >= 60 ? "جيد، راجع الأسئلة المعلّمة بالأحمر." : "عُد إلى باني الذرة والألعاب ثم أعد المحاولة.");
+  setScore("quiz", right * 10);
+};
+$("btnQuizReset").onclick = renderQuiz; renderQuiz();
+$("btnExit").onclick = function () { $("exitModel").hidden = false; };
+renderScore();
+})();
+</script>
